@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+
+	<title>Virtual Keyboard Basic Demo</title>
+
+	<!-- demo -->
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/font-awesome.min.css" rel="stylesheet">
+	<link href="css/demo.css" rel="stylesheet">
+
+	<!-- jQuery & jQuery UI + theme (required) -->
+	<link href="css/jquery-ui.min.css" rel="stylesheet">
+	<script src="js/jquery-latest.min.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+
+	<!-- keyboard widget css & script (required) -->
+	<link href="../css/keyboard.css" rel="stylesheet">
+	<script src="../js/jquery.keyboard.js"></script>
+
+	<!-- keyboard extensions (optional) -->
+	<script src="../js/jquery.mousewheel.js"></script>
+	<script src="../js/jquery.keyboard.extension-mobile.js"></script>
+	<script src="../js/wanakana.min.js"></script>
+	<!--
+	<script src="../js/jquery.keyboard.extension-typing.js"></script>
+	<script src="../js/jquery.keyboard.extension-autocomplete.js"></script>
+	-->
+
+	<!-- initialize keyboard (required) -->
+	<style type="text/css">
+		.ui-keyboard {
+		  border-radius: 0;
+		  bottom: 0;
+		  position: fixed;
+		  width: 100%;
+		}
+		.mybtn{
+		  float: left;
+		  width: 20%;
+		  height: 30px;
+		}
+	</style>
+	<script type="text/javascript" src="https://www.google.com/jsapi">
+    </script>
+    <script type="text/javascript">
+    	//Load the Language API.
+		google.load("language", "1");
+     
+    </script>
+	<script>
+		var textja = '';
+		var textzh = '';
+		var taglang = 'zh';
+		$(function(){
+
+			jQuery.keyboard.layouts['mycustom'] = {
+				"normal": [
+			      "q w e r t y u i o p",
+			      "a s d f g h j k l",
+			      "z x c v b n m {bksp}",
+			      "{abc} {alt} {space} {enter} {cancel}"
+	    		]
+			}
+
+			$('#keyboard').keyboard({
+				keyBinding : 'mousedown touchstart',
+    			alwaysOpen : true,
+    			layout: 'mycustom',
+    			autoAccept : true,
+    			change: function(event, keyboard, el) {
+				    console.log('changes canceled, value restored to ' + el.value);
+				    //debugger;
+				    if(event.action == 'enter'){
+				    	console.log("enter!");
+				    	if($(".ui-keyboard-preview").val() != ''){
+				    	$("#editta").append($(".ui-keyboard-preview").val());
+				    	$(".ui-keyboard-preview").val('');
+				    	for (var i2 = 5; i2 > 0; i2--) {
+							$("#btn"+i2.toString()).text("");
+						}
+				    	}
+				    	else{
+				    		$("#editta").append('。\n');
+				    	}
+				    }
+				    else{
+				    if(taglang == 'zh')
+				    $(".ui-keyboard-preview").val(wanakana.toHiragana($(".ui-keyboard-preview").val()));
+				    function transliter(){
+				    if($(".ui-keyboard-preview").val() != ""){
+				    	
+					    
+					    if(taglang == 'ja')	{
+						    //Call google.language.transliterate() 
+							google.language.transliterate([$(".ui-keyboard-preview").val()], "en", "zh", function(result) {
+							  if (!result.error) {
+							  	console.log("error");
+							    var container = document.getElementById("transliteration");
+							    if (result.transliterations && result.transliterations.length > 0 &&
+							        result.transliterations[0].transliteratedWords.length > 0) {
+							    	console.log("start zhime");
+							      	console.log(result.transliterations[0].transliteratedWords);
+							    }
+							  }
+							});
+						}
+						else{
+						var code = encodeURI($(".ui-keyboard-preview").val());
+					    $.ajax({
+					    	url:"http://www.google.com/transliterate?langpair=ja-Hira|ja&text=" + code,
+					    	type:'GET',
+					    	async:true,
+					    	success : function(data) { 
+					    		var resulttxt = eval(data);
+							    console.log("length="+resulttxt.length);
+							    console.log(resulttxt);
+							    //var cont = 0;
+							    for (var i = resulttxt[0][1].length - 1; i >= 0; i--) {
+							    	var mycont = i+1;
+							    	var btntmp = $("#btn"+mycont.toString());
+							    	btntmp.text(mycont.toString()+"."+resulttxt[0][1][i]);
+							    	//btntmp.attr('btnlen',resulttxt[0][0].length);
+							    	btntmp.unbind("click");
+							    	btntmp.bind('click',function(){
+							    		if($(this).text().length > 0){
+							    		var inputtmp = $(this).text().split(".");
+							    		console.log(inputtmp);
+							    		//debugger;
+							    		var test = $("#editta");
+							    		test.append(inputtmp[1]);
+							    		$(".ui-keyboard-preview").val($(".ui-keyboard-preview").val().substring(resulttxt[0][0].length));
+							    		transliter();
+							    		}
+							    	});
+							    };
+					    	},
+					    });
+						}
+					    
+					    
+					}
+					else{
+						for (var i2 = 5; i2 > 0; i2--) {
+							$("#btn"+i2.toString()).text("");
+						}
+					}
+
+					    
+					}
+					transliter();
+					}
+			  	},
+			  	visible : function(event, keyboard, el) {
+				    console.log('keyboard is now visible');
+				    $(".ui-keyboard-preview").attr("style",'border:0;');
+				    $(".ui-keyboard-preview").before('<textarea id="showta" disabled="disabled" style="width:100%;height:300px;"></textarea><textarea id="editta"  disabled="disabled" style="width:80%;height:150px;float:left;"></textarea><button id="showbtn" style="width:20%;float:left;height:75px;"></button><button id="transbtn" style="width:20%;float:left;height:75px;"></button>');
+				    $(".ui-keyboard-preview").after('<button class="mybtn" id="btn1"></button><button class="mybtn" id="btn2"></button><button class="mybtn" id="btn3"></button><button class="mybtn" id="btn4"></button><button class="mybtn" id="btn5"></button>');
+				    $('#showbtn').bind("click",function(){
+				    	$("#showta").append($("#editta").val());
+				    	$("#editta").text("");
+				    });
+				    $('#transbtn').bind("click",function(){
+				    	if($("#editta").text() != ''){
+				    	var transtext = $("#editta").text();	
+				    	var ajaxdata = {
+				    		'target':taglang,
+				    	};
+				    	//var transtextarray = transtext.split('/\n/g');
+				    	//for (var i =  0; i < transtextarray.length; i++) {
+				    	//	ajaxdata transtextarray
+				    	//}
+				    	$.ajax({
+					    	url:"https://translation.googleapis.com/language/translate/v2?key=AIzaSyDYIK_UyPl4mpcdsb3m5M1pLcZYRbiERm0",
+					    	type:'POST',
+					    	async:true,
+					    	data:{
+					    		'q':transtext,
+					    		'target':taglang,
+					    	},
+					    	success : function(data) {
+					    		//debugger;
+					    		if(taglang == 'zh')
+						    	textja += ("われ: " + transtext + '\n');
+						    	if(taglang == 'ja')
+						    	textzh += ('我: ' + transtext + '\n');
+					    		var transresult = eval(data);
+					    		if(taglang == 'zh'){
+					    		textzh += ("对方: " + transresult.data.translations[0].translatedText + "\n");
+					    		$("#showta").text(textzh);
+					    		var scrollTop = $("#showta")[0].scrollHeight;  
+                         		$("#showta").scrollTop(scrollTop);
+					    		taglang = 'ja';
+					    		$("#editta").text("");
+					    		console.log('textzh:'+textzh+'\n'+'textja:'+textja);
+					    		}
+					    		else{
+					    		textja += ("あなた: " + transresult.data.translations[0].translatedText + "\n");
+					    		$("#showta").text(textja);
+					    		taglang = 'zh';
+					    		$("#editta").text("");
+					    		console.log('textzh:'+textzh+'\n'+'textja:'+textja);
+					    		}
+					    		console.log('method:'+taglang);
+
+					    		//debugger;
+					    	},
+					    	error: function(XMLHttpRequest, textStatus, errorThrown) {
+								 alert(XMLHttpRequest.status);
+								 alert(XMLHttpRequest.readyState);
+								 alert(textStatus);
+						    },
+					    });
+				    }
+				    });
+				}
+			});
+			
+		});
+	</script>
+	<script type="text/javascript">
+		function OnInput (a) {
+            alert (a);
+        }
+	</script>
+	<script type="text/javascript">
+		
+	</script>
+</head>
+<body>
+	
+
+	<div id="wrap"> <!-- wrapper only needed to center the input -->
+	
+		
+		<!-- keyboard input -->
+		<input id="keyboard" type="text" style="display: none;" ></input>
+
+	</div> <!-- End wrapper -->
+
+</body>
+</html>
